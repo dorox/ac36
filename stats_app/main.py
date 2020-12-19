@@ -8,15 +8,22 @@ from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, Select
 from bokeh.plotting import figure
 
-races = dict()
 stats = {"heading":"headingIntep", "heel":"heelInterp", "pitch":"pitchInterp", "speed":"speedInterp", "tws":"twsInterp", "twd":"twdInterp", "port foil": "leftFoilPosition", "stbd foil": "rightFoilPosition",
-# "vmg":"vmg"
+"vmg":"vmg",
+"twa":"twa",
+"twa_abs":"twa_abs"
 }
 
-for i in os.listdir('ACWS/'):
-    with open(f'ACWS/{i}/stats.json') as f:
-        # print(json.load(f))
-        races[str(i)] = json.load(f)
+def read_races():
+    races = dict()
+    for i in os.listdir('ACWS/'):
+        with open(f'ACWS/{i}/stats.json') as f:
+            # print(json.load(f))
+            races[str(i)] = json.load(f)
+    return races
+
+races = read_races()
+boats = {}
 
 def read_boats(race):
     path = f'ACWS/{race}/'
@@ -26,20 +33,37 @@ def read_boats(race):
         boat2 = json.load(f)
     return boat1, boat2
 
-# def vmg(boat):
-#     twd = stat('twd', boat)
-#     heading = stat('heading', boat)
-#     sog = stat('speed', boat)
-#     for d in (twd, heading, sog):
-#         l = len(d['x'])
-#         start
-#     x = np.linspace(start=, stop=, num=l)
-#     np.in1d
-#     return dict(x=x, y=y)
+def get_twa(boat):
+    twd = stat('twd', boat)
+    cog = stat('heading', boat)
+    x = cog['x']
+    twd = np.interp(x, twd['x'], twd['y'])
+    cog = cog['y']
+    y = twd-cog
+    y[y<0] += 360
+    y[y>180] -=360
+    return dict(x=x, y=y)
+
+def get_twa_abs(boat):
+    d = get_twa(boat)
+    x = np.abs(d['x'])
+    y = np.abs(d['y'])
+    return dict(x=x, y=y)
+
+def get_vmg(boat):
+    twa = get_twa_abs(boat)
+    sog = stat('speed', boat)
+    x = twa['x']
+    sog = np.interp(x, sog['x'], sog['y'])
+    twa = twa['y']
+    y = np.abs(np.cos(np.deg2rad(twa))*sog)
+    return dict(x=x, y=y)
+
+funcs = {"vmg":get_vmg, "twa":get_twa, "twa_abs":get_twa_abs}
 
 def stat(key, boat):
-    if key == "vmg":
-        return vmg(boat)
+    if key in funcs:
+        return funcs[key](boat)
     s = boat[stats[key]]['valHistory']
     s = np.array(s)
     x = s[:,1]
@@ -55,30 +79,34 @@ def get_boat_info(b, r):
         n = races[r]['LegStats'][0]['Boat'][1]['Country']
     return c, n
 
-b1_src = ColumnDataSource(data = dict(x=[], y=[]))
-b2_src = ColumnDataSource(data = dict(x=[], y=[]))
-
 races_select = Select(value="1", title='Race', options=sorted(races.keys(), key=int))
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
 
 def get_plot():
     r=races_select.value
     s=stats_select.value
-    plot = figure(plot_width=900)
     b1, b2 = read_boats(r)
+    b1_src = ColumnDataSource(data = dict(x=[], y=[]))
+    b2_src = ColumnDataSource(data = dict(x=[], y=[]))
+    b1_src.data = stat(s, b1)
+    b2_src.data = stat(s, b2)
+
+    plot = figure(plot_width=900)
     c1, n1 = get_boat_info(b1, r)
     c2, n2 = get_boat_info(b2, r)
     plot.line('x', 'y', source=b1_src, color=c1, legend_label=n1)
     plot.line('x', 'y', source=b2_src, color=c2, legend_label=n2)
-    b1_src.data = stat(s, b1)
-    b2_src.data = stat(s, b2)
+
+    boats[1] = {"boat": b1, "source": b1_src}
+    boats[2] = {"boat": b2, "source": b2_src}
     return plot
 
 def upd_plot(attr, old, new):
     curdoc().roots[0].children[0] = get_plot()
 
 def upd_stat(attr, old, new):
-    curdoc().roots[0].children[0] = get_plot()
+    for b in boats.values():
+        b["source"].data = stat(new, b["boat"])
 
 races_select.on_change('value', upd_plot)
 stats_select.on_change('value', upd_stat)
