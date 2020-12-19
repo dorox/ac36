@@ -9,10 +9,13 @@ from bokeh.models import ColumnDataSource, Select
 from bokeh.plotting import figure
 
 races = dict()
-stats = {"heading":"headingIntep", "heel":"heelInterp", "pitch":"pitchInterp", "speed":"speedInterp", "tws":"twsInterp", "port foil": "leftFoilPosition", "stbd foil": "rightFoilPosition"}
+stats = {"heading":"headingIntep", "heel":"heelInterp", "pitch":"pitchInterp", "speed":"speedInterp", "tws":"twsInterp", "twd":"twdInterp", "port foil": "leftFoilPosition", "stbd foil": "rightFoilPosition",
+# "vmg":"vmg"
+}
 
 for i in os.listdir('ACWS/'):
     with open(f'ACWS/{i}/stats.json') as f:
+        # print(json.load(f))
         races[str(i)] = json.load(f)
 
 def read_boats(race):
@@ -23,7 +26,20 @@ def read_boats(race):
         boat2 = json.load(f)
     return boat1, boat2
 
+# def vmg(boat):
+#     twd = stat('twd', boat)
+#     heading = stat('heading', boat)
+#     sog = stat('speed', boat)
+#     for d in (twd, heading, sog):
+#         l = len(d['x'])
+#         start
+#     x = np.linspace(start=, stop=, num=l)
+#     np.in1d
+#     return dict(x=x, y=y)
+
 def stat(key, boat):
+    if key == "vmg":
+        return vmg(boat)
     s = boat[stats[key]]['valHistory']
     s = np.array(s)
     x = s[:,1]
@@ -42,7 +58,7 @@ def get_boat_info(b, r):
 b1_src = ColumnDataSource(data = dict(x=[], y=[]))
 b2_src = ColumnDataSource(data = dict(x=[], y=[]))
 
-races_select = Select(value="1", title='Race', options=sorted(races.keys()))
+races_select = Select(value="1", title='Race', options=sorted(races.keys(), key=int))
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
 
 def get_plot():
