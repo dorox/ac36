@@ -22,9 +22,6 @@ def read_races():
             races[str(i)] = json.load(f)
     return races
 
-races = read_races()
-boats = {}
-
 def read_boats(race):
     path = f'ACWS/{race}/'
     with open(path+"boat1.json") as f:
@@ -70,7 +67,7 @@ def stat(key, boat):
     y = s[:,0]
     return dict(x=x, y=y)
 
-def get_boat_info(b, r):
+def get_boat_info(b, r, races):
     if str(b['teamId']) == races[r]['LegStats'][0]['Boat'][0]['TeamID']:
         c = races[r]['LegStats'][0]['Boat'][0]['TeamColour']
         n = races[r]['LegStats'][0]['Boat'][0]['Country']
@@ -79,7 +76,8 @@ def get_boat_info(b, r):
         n = races[r]['LegStats'][0]['Boat'][1]['Country']
     return c, n
 
-races_select = Select(value="1", title='Race', options=sorted(races.keys(), key=int))
+opts = sorted(read_races().keys(), key=int)
+races_select = Select(value="1", title='Race', options=opts)
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
 
 def get_plot():
@@ -92,21 +90,21 @@ def get_plot():
     b2_src.data = stat(s, b2)
 
     plot = figure(plot_width=900)
-    c1, n1 = get_boat_info(b1, r)
-    c2, n2 = get_boat_info(b2, r)
+    races = read_races()
+    c1, n1 = get_boat_info(b1, r, races)
+    c2, n2 = get_boat_info(b2, r, races)
     plot.line('x', 'y', source=b1_src, color=c1, legend_label=n1)
     plot.line('x', 'y', source=b2_src, color=c2, legend_label=n2)
-
-    boats[1] = {"boat": b1, "source": b1_src}
-    boats[2] = {"boat": b2, "source": b2_src}
     return plot
 
 def upd_plot(attr, old, new):
     curdoc().roots[0].children[0] = get_plot()
 
 def upd_stat(attr, old, new):
-    for b in boats.values():
-        b["source"].data = stat(new, b["boat"])
+    curdoc().roots[0].children[0] = get_plot()
+    # takes too much memory
+    # for b in boats.values():
+    #     b["source"].data = stat(new, b["boat"])
 
 races_select.on_change('value', upd_plot)
 stats_select.on_change('value', upd_stat)
