@@ -102,6 +102,13 @@ funcs = {
 }
 
 
+def get_datetime(dic, boat):
+    race_start = boat["legInterp"]["valHistory"][1][1]
+    x = dic["x"]
+    x = np.array(x - race_start, dtype="timedelta64[s]")
+    return dict(x=x, y=dic["y"])
+
+
 def stat(key, boat):
     if key in funcs:
         return funcs[key](boat)
@@ -111,8 +118,6 @@ def stat(key, boat):
     s = boat[stats[key]]["valHistory"]
     s = np.array(s)
     x = s[:, 1]
-    race_start = boat["legInterp"]["valHistory"][1][1]
-    x = np.array(x - race_start, dtype="timedelta64[s]")
     y = s[:, 0] * unit
     return dict(x=x, y=y)
 
@@ -143,7 +148,8 @@ def get_plot():
     plot.xaxis.axis_label = "Race time (start at 1/01)"
     plot.yaxis.axis_label = units[s]
     for b in (b1, b2):
-        b_src = ColumnDataSource(data=stat(s, b))
+        time_data = get_datetime(stat(s, b), b)
+        b_src = ColumnDataSource(data=time_data)
         clr, name = get_boat_info(b, r, races)
         plot.line("x", "y", source=b_src, color=clr, legend_label=name)
         if cb_labels.index("Show race legs") in legs_cb.active:
