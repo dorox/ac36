@@ -2,4 +2,4 @@
 .vscode
 venv
 .bin
-.ipynb
+*.ipynb
