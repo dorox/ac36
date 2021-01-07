@@ -4,6 +4,8 @@ AC36 statistics web app
 
 -Heroku branch: tools for deriving some useful stats, web app code, and pickled compressed data at 1Hz sampling rate
 
+I'm planning on making this repo public once the challenger series begins.
+
 Some useful links:
 ---------------------
 - Virtual EYE server: https://dx6j99ytnx80e.cloudfront.net/
