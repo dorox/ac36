@@ -1,15 +1,19 @@
-import os
-import json
-import pickle
-
 import numpy as np
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Select, Span, CheckboxGroup
+from bokeh.models import (
+    ColumnDataSource,
+    Select,
+    Span,
+    CheckboxGroup,
+    HoverTool,
+    BoxSelectTool,
+)
 from bokeh.plotting import figure
 
 import tools
+
 
 stats = {
     "heading": "headingIntep",
@@ -54,29 +58,66 @@ legs_cb = CheckboxGroup(labels=cb_labels)
 def get_plot():
     r = races_select.value
     s = stats_select.value
-    races = tools.read_races()
+    # races = tools.read_races()
     b1, b2 = tools.read_boats(r)
 
-    plot = figure(sizing_mode="stretch_width", x_axis_type="datetime", plot_height=500)
+    plot = figure(
+        sizing_mode="stretch_width",
+        x_axis_type="datetime",
+        plot_height=500,
+        tools="pan, xwheel_zoom, reset, box_zoom",
+    )
+    bs = BoxSelectTool(dimensions="width")
+    plot.add_tools(
+        HoverTool(
+            tooltips=[
+                ("boat", "$name"),
+                ("speed", "@y"),
+                ("time", "@time{%M:%S}"),
+            ],
+            formatters={"@time": "datetime"},
+            mode="vline",
+        ),
+        bs,
+    )
     plot.xaxis.axis_label = "Race time (start at 1/01)"
-    plot.yaxis.axis_label = units[s]
+    plot.yaxis.axis_label = f"{s}, {units[s]}"
+
+    def selection_change(attr, old, new):
+        print(attr, old, new)
+
     for b in (b1, b2):
-        time_data = dict(x=b["x"], y=b[s])
+        time_data = {"time": b["x"], "y": b[s]}
         b_src = ColumnDataSource(data=time_data)
-        plot.line("x", "y", source=b_src, color=b["color"], legend_label=b["name"])
+        b_src.selected.on_change("indices", selection_change)
+        plot.line(
+            "time",
+            "y",
+            source=b_src,
+            color=b["color"],
+            legend_label=b["name"],
+            name=b["name"],
+        )
         if cb_labels.index("Show race legs") in legs_cb.active:
-            race_start = b["legs"][1]
-            for i in b["legs"].values():
-                span = Span(
-                    location=np.timedelta64(int(i - race_start), "s"),
-                    dimension="height",
-                    line_color=b["color"],
-                    line_alpha=0.3,
-                    line_dash="dashed",
-                    line_width=5,
-                )
-                plot.add_layout(span)
+            add_legs(plot, (b1, b2))
+    plot.legend.click_policy = "hide"
+
     return plot
+
+
+def add_legs(plot, boats):
+    for b in boats:
+        race_start = b["legs"][1]
+        for i in b["legs"].values():
+            span = Span(
+                location=np.timedelta64(int(i - race_start), "s"),
+                dimension="height",
+                line_color=b["color"],
+                line_alpha=0.3,
+                line_dash="dashed",
+                line_width=5,
+            )
+            plot.add_layout(span)
 
 
 def upd_plot(attr, old, new):
