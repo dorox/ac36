@@ -1,117 +1,138 @@
-import os
-import json
-
 import numpy as np
 
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Select
+from bokeh.models import (
+    ColumnDataSource,
+    Select,
+    Span,
+    CheckboxGroup,
+    HoverTool,
+    BoxSelectTool,
+)
 from bokeh.plotting import figure
 
-stats = {"heading":"headingIntep", "heel":"heelInterp", "pitch":"pitchInterp", "speed":"speedInterp", "tws":"twsInterp", "twd":"twdInterp", "port foil": "leftFoilPosition", "stbd foil": "rightFoilPosition",
-"vmg":"vmg",
-"twa":"twa",
-"twa_abs":"twa_abs"
+import tools
+
+
+stats = {
+    "heading": "headingIntep",
+    "heel": "heelInterp",
+    "pitch": "pitchInterp",
+    "speed": "speedInterp",
+    "tws": "twsInterp",
+    "twd": "twdInterp",
+    "port foil": "leftFoilPosition",
+    "stbd foil": "rightFoilPosition",
+    "both foils": "both foils",
+    "vmg": "vmg",
+    "twa": "twa",
+    "twa_abs": "twa_abs",
+    "vmg/tws": "tws/vmg",
+}
+units = {
+    "heading": "deg",
+    "heel": "deg",
+    "pitch": "deg",
+    "speed": "kn",
+    "tws": "kn",
+    "twd": "deg",
+    "port foil": "deg",
+    "stbd foil": "deg",
+    "both foils": "deg",
+    "vmg": "kn",
+    "twa": "deg(-180:180)",
+    "twa_abs": "deg(0:180)",
+    "vmg/tws": "vmg/tws",
 }
 
-def read_races():
-    races = dict()
-    for i in os.listdir('ACWS/'):
-        with open(f'ACWS/{i}/stats.json') as f:
-            # print(json.load(f))
-            races[str(i)] = json.load(f)
-    return races
+cb_labels = ["Show race legs"]
 
-races = read_races()
-boats = {}
 
-def read_boats(race):
-    path = f'ACWS/{race}/'
-    with open(path+"boat1.json") as f:
-        boat1 = json.load(f)
-    with open(path+"boat2.json") as f:
-        boat2 = json.load(f)
-    return boat1, boat2
-
-def get_twa(boat):
-    twd = stat('twd', boat)
-    cog = stat('heading', boat)
-    x = cog['x']
-    twd = np.interp(x, twd['x'], twd['y'])
-    cog = cog['y']
-    y = twd-cog
-    y[y<0] += 360
-    y[y>180] -=360
-    return dict(x=x, y=y)
-
-def get_twa_abs(boat):
-    d = get_twa(boat)
-    x = np.abs(d['x'])
-    y = np.abs(d['y'])
-    return dict(x=x, y=y)
-
-def get_vmg(boat):
-    twa = get_twa_abs(boat)
-    sog = stat('speed', boat)
-    x = twa['x']
-    sog = np.interp(x, sog['x'], sog['y'])
-    twa = twa['y']
-    y = np.abs(np.cos(np.deg2rad(twa))*sog)
-    return dict(x=x, y=y)
-
-funcs = {"vmg":get_vmg, "twa":get_twa, "twa_abs":get_twa_abs}
-
-def stat(key, boat):
-    if key in funcs:
-        return funcs[key](boat)
-    s = boat[stats[key]]['valHistory']
-    s = np.array(s)
-    x = s[:,1]
-    y = s[:,0]
-    return dict(x=x, y=y)
-
-def get_boat_info(b, r):
-    if str(b['teamId']) == races[r]['LegStats'][0]['Boat'][0]['TeamID']:
-        c = races[r]['LegStats'][0]['Boat'][0]['TeamColour']
-        n = races[r]['LegStats'][0]['Boat'][0]['Country']
-    else:
-        c = races[r]['LegStats'][0]['Boat'][1]['TeamColour']
-        n = races[r]['LegStats'][0]['Boat'][1]['Country']
-    return c, n
-
-races_select = Select(value="1", title='Race', options=sorted(races.keys(), key=int))
+opts = sorted(tools.read_races().keys(), key=int)
+races_select = Select(value="1", title="Race", options=opts)
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
+legs_cb = CheckboxGroup(labels=cb_labels)
+
 
 def get_plot():
-    r=races_select.value
-    s=stats_select.value
-    b1, b2 = read_boats(r)
-    b1_src = ColumnDataSource(data = dict(x=[], y=[]))
-    b2_src = ColumnDataSource(data = dict(x=[], y=[]))
-    b1_src.data = stat(s, b1)
-    b2_src.data = stat(s, b2)
+    r = races_select.value
+    s = stats_select.value
+    # races = tools.read_races()
+    b1, b2 = tools.read_boats(r)
 
-    plot = figure(plot_width=900)
-    c1, n1 = get_boat_info(b1, r)
-    c2, n2 = get_boat_info(b2, r)
-    plot.line('x', 'y', source=b1_src, color=c1, legend_label=n1)
-    plot.line('x', 'y', source=b2_src, color=c2, legend_label=n2)
+    plot = figure(
+        sizing_mode="stretch_width",
+        x_axis_type="datetime",
+        plot_height=500,
+        tools="pan, xwheel_zoom, reset, box_zoom",
+    )
+    bs = BoxSelectTool(dimensions="width")
+    plot.add_tools(
+        HoverTool(
+            tooltips=[
+                ("boat", "$name"),
+                ("speed", "@y"),
+                ("time", "@time{%M:%S}"),
+            ],
+            formatters={"@time": "datetime"},
+            mode="vline",
+        ),
+        bs,
+    )
+    plot.xaxis.axis_label = "Race time (start at 1/01)"
+    plot.yaxis.axis_label = f"{s}, {units[s]}"
 
-    boats[1] = {"boat": b1, "source": b1_src}
-    boats[2] = {"boat": b2, "source": b2_src}
+    def selection_change(attr, old, new):
+        print(attr, old, new)
+
+    for b in (b1, b2):
+        time_data = {"time": b["x"], "y": b[s]}
+        b_src = ColumnDataSource(data=time_data)
+        b_src.selected.on_change("indices", selection_change)
+        plot.line(
+            "time",
+            "y",
+            source=b_src,
+            color=b["color"],
+            legend_label=b["name"],
+            name=b["name"],
+        )
+        if cb_labels.index("Show race legs") in legs_cb.active:
+            add_legs(plot, (b1, b2))
+    plot.legend.click_policy = "hide"
+
     return plot
+
+
+def add_legs(plot, boats):
+    for b in boats:
+        race_start = b["legs"][1]
+        for i in b["legs"].values():
+            span = Span(
+                location=np.timedelta64(int(i - race_start), "s"),
+                dimension="height",
+                line_color=b["color"],
+                line_alpha=0.3,
+                line_dash="dashed",
+                line_width=5,
+            )
+            plot.add_layout(span)
+
 
 def upd_plot(attr, old, new):
     curdoc().roots[0].children[0] = get_plot()
 
+
 def upd_stat(attr, old, new):
-    for b in boats.values():
-        b["source"].data = stat(new, b["boat"])
+    curdoc().roots[0].children[0] = get_plot()
 
-races_select.on_change('value', upd_plot)
-stats_select.on_change('value', upd_stat)
 
-controls = row(races_select, stats_select)
+races_select.on_change("value", upd_plot)
+stats_select.on_change("value", upd_stat)
+legs_cb.on_click(lambda a: upd_plot(a, "", ""))
 
-curdoc().add_root(column(get_plot(), controls))
+controls = row(races_select, stats_select, legs_cb)
+
+curdoc().add_root(column(get_plot(), controls, sizing_mode="stretch_both"))
 curdoc().title = "stats"

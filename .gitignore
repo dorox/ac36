@@ -1,3 +1,6 @@
 /photos
 .vscode
 venv
+.bin
+*.ipynb
+*.pyc
