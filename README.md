@@ -1,10 +1,6 @@
 AC36 statistics web app
 ------------------
--Master branch: contains raw data files.
-
--Heroku branch: tools for deriving some useful stats, web app code, and pickled compressed data at 1Hz sampling rate
-
-I'm planning on making this repo public once the challenger series begins.
+Hosted at https://ac36.herokuapp.com 
 
 Some useful links:
 ---------------------

@@ -1,2 +1,3 @@
+git+https://github.com/dorox/ac36_data.git
 bokeh
 numpy

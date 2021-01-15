@@ -12,13 +12,14 @@ from bokeh.models import (
 )
 from bokeh.plotting import figure
 
-import tools
+import ac36data
 
 
 stats = {
     "heading": "headingIntep",
     "heel": "heelInterp",
     "pitch": "pitchInterp",
+    "height": "elevInterp",
     "speed": "speedInterp",
     "tws": "twsInterp",
     "twd": "twdInterp",
@@ -34,6 +35,7 @@ units = {
     "heading": "deg",
     "heel": "deg",
     "pitch": "deg",
+    "height": "m",
     "speed": "kn",
     "tws": "kn",
     "twd": "deg",
@@ -49,17 +51,18 @@ units = {
 cb_labels = ["Show race legs"]
 
 
-opts = sorted(tools.read_races().keys(), key=int)
+event_select = Select(value="prada2021", title="Event", options=ac36data.events)
+opts = ac36data.get_races(event_select.value)
 races_select = Select(value="1", title="Race", options=opts)
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
 legs_cb = CheckboxGroup(labels=cb_labels)
 
 
 def get_plot():
+    e = event_select.value
     r = races_select.value
     s = stats_select.value
-    # races = tools.read_races()
-    b1, b2 = tools.read_boats(r)
+    b1, b2 = ac36data.get_boats(e, r)
 
     plot = figure(
         sizing_mode="stretch_width",
@@ -67,18 +70,16 @@ def get_plot():
         plot_height=500,
         tools="pan, xwheel_zoom, reset, box_zoom",
     )
-    bs = BoxSelectTool(dimensions="width")
     plot.add_tools(
         HoverTool(
             tooltips=[
                 ("boat", "$name"),
-                ("speed", "@y"),
+                (s, "@y"),
                 ("time", "@time{%M:%S}"),
             ],
             formatters={"@time": "datetime"},
             mode="vline",
-        ),
-        bs,
+        )
     )
     plot.xaxis.axis_label = "Race time (start at 1/01)"
     plot.yaxis.axis_label = f"{s}, {units[s]}"
@@ -89,7 +90,6 @@ def get_plot():
     for b in (b1, b2):
         time_data = {"time": b["x"], "y": b[s]}
         b_src = ColumnDataSource(data=time_data)
-        b_src.selected.on_change("indices", selection_change)
         plot.line(
             "time",
             "y",
@@ -107,10 +107,9 @@ def get_plot():
 
 def add_legs(plot, boats):
     for b in boats:
-        race_start = b["legs"][1]
-        for i in b["legs"].values():
+        for i in b["legs"]:
             span = Span(
-                location=np.timedelta64(int(i - race_start), "s"),
+                location=i,
                 dimension="height",
                 line_color=b["color"],
                 line_alpha=0.3,
@@ -124,15 +123,22 @@ def upd_plot(attr, old, new):
     curdoc().roots[0].children[0] = get_plot()
 
 
+def upd_races_select(attr, old, new):
+    races_select.options = ac36data.get_races(event_select.value)
+    races_select.value = "1"
+
+
 def upd_stat(attr, old, new):
     curdoc().roots[0].children[0] = get_plot()
 
 
+event_select.on_change("value", upd_races_select)
+event_select.on_change("value", upd_plot)
 races_select.on_change("value", upd_plot)
 stats_select.on_change("value", upd_stat)
 legs_cb.on_click(lambda a: upd_plot(a, "", ""))
 
-controls = row(races_select, stats_select, legs_cb)
+controls = row(event_select, races_select, stats_select, legs_cb)
 
 curdoc().add_root(column(get_plot(), controls, sizing_mode="stretch_both"))
 curdoc().title = "stats"
