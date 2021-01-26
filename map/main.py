@@ -48,6 +48,7 @@ plot = figure(
     tools="pan, xwheel_zoom, reset, box_zoom",
     sizing_mode="stretch_width",
     active_scroll="xwheel_zoom",
+    height=200,
 )
 stats_select = Select(value="speed", title="Statistics", options=list(stats.keys()))
 
