@@ -145,14 +145,16 @@ cb_range = CustomJS(
     var y2 = b2.data.lat[0]
     var x = (x1 + x2) / 2;
     var y = (y1 + y2) / 2;
-    var rx = Math.max((p.x_range.end - p.x_range.start) / 2, x1-x, x2-x)
-    var ry = Math.max((p.y_range.end - p.y_range.start) / 2, y1-y, y2-y)
-    var r = Math.max(rx, ry)
-    p.x_range.start = x - r
-    p.x_range.end = x + r
-    p.y_range.start = y - r
-    p.y_range.end = y + r
-    // console.log('cb_range')
+    
+    //var rx = Math.max((p.x_range.end - p.x_range.start) / 2, x1-x, x2-x)
+    //var ry = Math.max((p.y_range.end - p.y_range.start) / 2, y1-y, y2-y)
+    var rx = (p.x_range.end - p.x_range.start) / 2
+    var ry = (p.y_range.end - p.y_range.start) / 2
+    p.x_range.start = x - rx
+    p.x_range.end = x + rx
+    p.y_range.start = y - ry
+    p.y_range.end = y + ry
+    //console.log('cb_range')
     """,
 )
 
