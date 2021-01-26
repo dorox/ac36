@@ -1,7 +1,7 @@
 import pickle
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Slider, Span, Select
+from bokeh.models import ColumnDataSource, Slider, Span, Select, CheckboxGroup
 from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
@@ -92,8 +92,8 @@ def add_boat(b, map):
         var n = cb_obj.value
         var b = b.data
         track.data = {
-            lon: b['lon'].slice(n-Math.min(n, 800), n+1),
-            lat: b['lat'].slice(n-Math.min(n, 800), n+1)
+            lon: b['lon'].slice(n-Math.min(n, 200), n+1),
+            lat: b['lat'].slice(n-Math.min(n, 200), n+1)
         };
         pos.data.lon = [b['lon'][n]];
         pos.data.lat = [b['lat'][n]];

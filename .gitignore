@@ -1,4 +1,5 @@
 /photos
+__pycache__
 .vscode
 venv
 .bin
