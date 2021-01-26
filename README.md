@@ -1,6 +1,7 @@
 AC36 statistics web app
 ------------------
 Hosted at https://ac36.herokuapp.com 
+Data at https://github.com/dorox/ac36_data
 
 Some useful links:
 ---------------------
