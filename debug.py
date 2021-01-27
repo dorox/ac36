@@ -15,5 +15,5 @@ server = Server(
     port=5001,
 )
 server.start()
-server.show("/stats_app")
+# server.show("/map")
 io_loop.start()
