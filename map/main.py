@@ -1,4 +1,3 @@
-import pickle
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, Slider, Span, Select, LegendItem
@@ -49,12 +48,15 @@ plot = figure(
 sel_stats = Select(
     value="speed",
     title="Statistics",
-    width=200,
+    width=100,
     options=list(opt_stats.keys()),
     name="stats",
 )
 sel_race = Select(
     value="1", title="Race", width=50, options=ac36data.get_races("prada2021")
+)
+sel_event = Select(
+    value="prada2021", title="Event", width=100, options=["acws2020", "prada2021"]
 )
 sl_time = Slider(
     start=0,
@@ -66,27 +68,33 @@ sl_time = Slider(
     name="time",
 )
 
-sel_race.on_change("value", lambda a, o, n: upd_all())
+sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
+sel_event.on_change("value", lambda a, o, n: upd_all())
 
 curdoc().add_root(
-    column(map, plot, row(sl_time, sel_stats, sel_race), sizing_mode="stretch_width")
+    column(
+        map,
+        plot,
+        row(sl_time, sel_stats, sel_event, sel_race),
+        sizing_mode="stretch_width",
+    )
 )
 
-cds_boats = [
-    ColumnDataSource(name="cds_boat"),
-    ColumnDataSource(name="cds_boat"),
-]
+boats = (dict(), dict())
 
 
-def get_boats(event="prada2021", race=1):
-    boats = ac36data.get_boats(event, race)
-    for cds, b in zip(cds_boats, boats):
-        cds.data = {k: v for k, v in b.items() if type(v) != str}
-        cds.name = b["name"]
-        cds.tags = [b["color"]]
+def get_boat_cds(boat, cds_id=None):
+    if not cds_id:
+        cds = ColumnDataSource()
+    else:
+        cds = curdoc().get_model_by_id(cds_id)
+    cds.data = {k: v for k, v in boat.items() if type(v) != str}
+    cds.name = boat["name"]
+    cds.tags = [boat["color"]]
+    return cds
 
 
-def add_boat_track(b_cds):
+def add_boat_track(b_cds, boat):
     b = b_cds.data
     track = ColumnDataSource(
         data={
@@ -96,6 +104,7 @@ def add_boat_track(b_cds):
         },
         name="b_track",
     )
+    boat["track"] = track.id
     pos = ColumnDataSource(
         data={
             "lon": [b["lon"][0]],
@@ -105,7 +114,7 @@ def add_boat_track(b_cds):
         },
         name="b_pos",
     )
-
+    boat["pos"] = pos.id
     map.image_url(
         url="url",
         x="lon",
@@ -118,7 +127,10 @@ def add_boat_track(b_cds):
         source=pos,
         name="b_img",
     )
-    map.line(x="lon", y="lat", color=b_cds.tags[0], source=track, name="line_track")
+    line = map.line(
+        x="lon", y="lat", color=b_cds.tags[0], source=track, name="line_track"
+    )
+    boat["line_track"] = line.id
 
     cb_pos = CustomJS(
         args=dict(track=track, pos=pos, b=b_cds),
@@ -141,21 +153,22 @@ def add_boat_track(b_cds):
     sl_time.js_on_change("value", cb_pos)
 
 
-def add_boat_plot(b_cds):
-    s = "speed"
-    b = ColumnDataSource(
-        data={"time": b_cds.data["x"], "y": b_cds.data[s]}, name="b_stat"
+def add_boat_plot(b_cds, boat):
+    stat = ColumnDataSource(
+        data={"time": b_cds.data["x"], "y": b_cds.data["speed"]}, name="b_stat"
     )
-    plot.line(
+    boat["stat"] = stat.id
+    line = plot.line(
         "time",
         "y",
-        source=b,
+        source=stat,
         color=b_cds.tags[0],
         # legend_label=b_cds.name,
         name="line_stat",
     )
+    boat["line_stat"] = line.id
     cb_js = CustomJS(
-        args=dict(b=b, b_cds=b_cds),
+        args=dict(b=stat, b_cds=b_cds),
         code="""
         b.data.y = b_cds.data[cb_obj.value]
         b.change.emit()
@@ -166,16 +179,18 @@ def add_boat_plot(b_cds):
 
 
 def add_boats():
-    get_boats()
-    for b in cds_boats:
-        add_boat_plot(b)
-        add_boat_track(b)
+    boats_raw = ac36data.get_boats("prada2021", 1)
+    for b, d in zip(boats_raw, boats):
+        cds = get_boat_cds(b)
+        d["cds"] = cds.id
+        add_boat_plot(cds, d)
+        add_boat_track(cds, d)
 
     # --Vertical line to indicate time: ---
     sp_time = Span(location=0, dimension="height", line_color="grey", line_width=1)
     plot.add_layout(sp_time)
     cb_sp_time = CustomJS(
-        args=dict(sp=sp_time, b=b),
+        args=dict(sp=sp_time, b=cds),
         code="""
         // console.log('sp_time')
         var n = cb_obj.value
@@ -183,7 +198,7 @@ def add_boats():
         """,
     )
     sl_time.js_on_change("value", cb_sp_time)
-    sl_time.end = len(b.data["x"]) - 1
+    sl_time.end = len(cds.data["x"]) - 1
 
     # -- Auto-centering ---
     b_pos = curdoc().select(dict(name="b_pos"))
@@ -205,44 +220,44 @@ def add_boats():
     sl_time.js_on_change("value", cb_range)
 
 
-def upd_tracks():
-    tracks = curdoc().select(dict(name="b_track"))
-    positions = curdoc().select(dict(name="b_pos"))
-    lines = curdoc().select(dict(name="line_track"))
-    for track, pos, line, b_cds in zip(tracks, positions, lines, cds_boats):
-        b = b_cds.data
-        track.data = {
-            "lon": b["lon"],
-            "lat": b["lat"],
-            "hdg": -b["heading"],
-        }
-        pos.data = {
-            "lon": [b["lon"][0]],
-            "lat": [b["lat"][0]],
-            "hdg": [-b["heading"][0]],
-            "url": ["map/static/boatMH.png"],
-        }
-        line.glyph.line_color = b_cds.tags[0]
+def upd_tracks(b_cds, boat):
+    track = curdoc().get_model_by_id(boat["track"])
+    pos = curdoc().get_model_by_id(boat["pos"])
+    line = curdoc().get_model_by_id(boat["line_track"])
+    b = b_cds.data
+    track.data = {
+        "lon": b["lon"],
+        "lat": b["lat"],
+        "hdg": -b["heading"],
+    }
+    pos.data = {
+        "lon": [b["lon"][0]],
+        "lat": [b["lat"][0]],
+        "hdg": [-b["heading"][0]],
+        "url": ["map/static/boatMH.png"],
+    }
+    line.glyph.line_color = b_cds.tags[0]
 
 
-def upd_stats():
-    stats = curdoc().select(dict(name="b_stat"))
-    lines = curdoc().select(dict(name="line_stat"))
-    for stat, line, b in zip(stats, lines, cds_boats):
-        stat.data = {"time": b.data["x"], "y": b.data[sel_stats.value]}
-        line.glyph.line_color = b.tags[0]
+def upd_stats(b_cds, boat):
+    stat = curdoc().get_model_by_id(boat["stat"])
+    line = curdoc().get_model_by_id(boat["line_stat"])
+    stat.data = {"time": b_cds.data["x"], "y": b_cds.data[sel_stats.value]}
+    line.glyph.line_color = b_cds.tags[0]
 
     # # legends = plot.legend.items
-    # for line, b in zip(lines, cds_boats):
-
     #     # legend.label["value"] = "hehe"
 
 
-def upd_all():
-    get_boats("prada2021", sel_race.value)
-    upd_tracks()
-    upd_stats()
-    sl_time.end = len(cds_boats[0].data["x"]) - 1
+def upd_all(race=1):
+    event = sel_event.value
+    boats_raw = ac36data.get_boats(sel_event.value, race)
+    for b, d in zip(boats_raw, boats):
+        cds = get_boat_cds(b, d["cds"])
+        upd_tracks(cds, d)
+        upd_stats(cds, d)
+    sl_time.end = len(cds.data["x"]) - 1
+    sel_race.options = ac36data.get_races(event)
 
 
 add_boats()

@@ -12,7 +12,7 @@ app_map = Application(dh)
 server = Server(
     applications={"/stats_app": app_stat, "/map": app_map},
     io_loop=io_loop,
-    port=5001,
+    port=5002,
 )
 server.start()
 # server.show("/map")
