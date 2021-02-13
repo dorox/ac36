@@ -192,12 +192,16 @@ def add_boats():
     cb_sp_time = CustomJS(
         args=dict(sp=sp_time, b=cds),
         code="""
-        // console.log('sp_time')
+        console.log('sp_time')
         var n = cb_obj.value
         sp.location = b.data.x[n]
         """,
     )
     sl_time.js_on_change("value", cb_sp_time)
+    # sl_time.format = "time{%MS}"
+    sl_time.start = 0  # cds.data["x"][0]
+    # sl_time.end = cds.data["x"][-1]
+
     sl_time.end = len(cds.data["x"]) - 1
 
     # -- Auto-centering ---
