@@ -5,6 +5,8 @@ Data at https://github.com/dorox/ac36_data
 
 Some useful links:
 ---------------------
+- Implementing youtube feed: http://jsfiddle.net/bcf8634L/8/ 
+
 - Virtual EYE server: https://dx6j99ytnx80e.cloudfront.net/
 
 - Outdated races list: https://www.americascup.com/en/feed/race-ids.json

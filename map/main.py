@@ -5,6 +5,7 @@ from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 
+import numpy as np
 import ac36data
 
 opt_stats = {
@@ -63,7 +64,7 @@ sl_time = Slider(
     end=1,
     value=0,
     step=1,
-    title="Time",
+    title="Time, ms",
     sizing_mode="stretch_width",
     name="time",
 )
@@ -88,7 +89,7 @@ def get_boat_cds(boat, cds_id=None):
         cds = ColumnDataSource()
     else:
         cds = curdoc().get_model_by_id(cds_id)
-    cds.data = {k: v for k, v in boat.items() if type(v) != str}
+    cds.data = {k: v for k, v in boat.items() if type(v) != str and k != "legs"}
     cds.name = boat["name"]
     cds.tags = [boat["color"]]
     return cds
@@ -131,14 +132,13 @@ def add_boat_track(b_cds, boat):
         x="lon", y="lat", color=b_cds.tags[0], source=track, name="line_track"
     )
     boat["line_track"] = line.id
-
     cb_pos = CustomJS(
         args=dict(track=track, pos=pos, b=b_cds),
         code="""
         // console.log('cb_pos')
-        b.change.emit()
         var n = cb_obj.value
         var b = b.data
+        n = b.x.findIndex(x=>x>=n)
         track.data = {
             lon: b['lon'].slice(n-Math.min(n, 200), n+1),
             lat: b['lat'].slice(n-Math.min(n, 200), n+1)
@@ -180,6 +180,12 @@ def add_boat_plot(b_cds, boat):
 
 def add_boats():
     boats_raw = ac36data.get_boats("prada2021", 1)
+    # sl_time.start = 0
+    # sl_time.end = max((len(boats_raw[0]["x"]), len(boats_raw[1]["x"]))) - 1
+    sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
+    sl_time.end = min((boats_raw[0]["x"][-1], boats_raw[1]["x"][-1]))
+    sl_time.step = boats_raw[0]["x"][2] - boats_raw[0]["x"][1]
+
     for b, d in zip(boats_raw, boats):
         cds = get_boat_cds(b)
         d["cds"] = cds.id
@@ -192,17 +198,13 @@ def add_boats():
     cb_sp_time = CustomJS(
         args=dict(sp=sp_time, b=cds),
         code="""
-        console.log('sp_time')
+        // console.log('sp_time')
         var n = cb_obj.value
+        n = b.data.x.findIndex(x=>x>=n)
         sp.location = b.data.x[n]
         """,
     )
     sl_time.js_on_change("value", cb_sp_time)
-    # sl_time.format = "time{%MS}"
-    sl_time.start = 0  # cds.data["x"][0]
-    # sl_time.end = cds.data["x"][-1]
-
-    sl_time.end = len(cds.data["x"]) - 1
 
     # -- Auto-centering ---
     b_pos = curdoc().select(dict(name="b_pos"))
@@ -260,7 +262,10 @@ def upd_all(race=1):
         cds = get_boat_cds(b, d["cds"])
         upd_tracks(cds, d)
         upd_stats(cds, d)
-    sl_time.end = len(cds.data["x"]) - 1
+    # sl_time.end = len(cds.data["x"]) - 1
+    sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
+    sl_time.end = min((boats_raw[0]["x"][-1], boats_raw[1]["x"][-1]))
+    sl_time.step = boats_raw[0]["x"][2] - boats_raw[0]["x"][1]
     sel_race.options = ac36data.get_races(event)
 
 
