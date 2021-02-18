@@ -73,13 +73,13 @@ def get_plot():
             tooltips=[
                 ("boat", "$name"),
                 (s, "@y"),
-                ("time", "@time{%M:%S}"),
+                ("time", "@time{%H:%M:%S}"),
             ],
             formatters={"@time": "datetime"},
             mode="vline",
         )
     )
-    plot.xaxis.axis_label = "Race time (start at 1/01)"
+    plot.xaxis.axis_label = "Time"
     plot.yaxis.axis_label = f"{s}, {units[s]}"
 
     def selection_change(attr, old, new):

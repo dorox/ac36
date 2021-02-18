@@ -1,0 +1,19 @@
+{% extends base %}
+
+{% block preamble %}
+<script src="https://cdn.bokeh.org/bokeh/release/bokeh-1.1.0.min.js"></script>
+<script>
+    {% include 'main.js' %}
+</script>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+<style>
+    :root {
+        touch-action: pan-x pan-y;
+    }
+</style>
+{% endblock %}
+
+{% block contents %}
+{{ super() }}
+<!-- <div id="player"></div> -->
+{% endblock %}

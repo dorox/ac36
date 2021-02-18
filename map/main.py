@@ -1,11 +1,18 @@
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, Slider, Span, Select, LegendItem
+from bokeh.models import (
+    ColumnDataSource,
+    Slider,
+    Span,
+    Select,
+    LegendItem,
+    Toggle,
+    DatetimeTickFormatter,
+)
 from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 
-import numpy as np
 import ac36data
 
 opt_stats = {
@@ -67,10 +74,36 @@ sl_time = Slider(
     title="Time, ms",
     sizing_mode="stretch_width",
     name="time",
+    format="%F",
 )
+# bt_play = Toggle(label="play")
+# cb_bt_play = CustomJS(
+#     args=dict(sl_time=sl_time),
+#     code="""
+#     console.log('play')
+#     console.log(cb_obj.active)
+#     do {
+#         setTimeout(function() {console.log('playing')}, 500)
+#     } while (cb_obj.active)
+#     """,
+# )
+# bt_play.js_on_click(cb_bt_play)
+
+# cb_yt_time = CustomJS(
+#     code="""
+#     // YT start time = 8:30, 491s
+#     // data start time = 58739760
+#     console.log('yt seek')
+#     var t = cb_obj.value
+#     var yt_start = 510
+#     player.seekTo((t-58739760+491000)/1000)
+# """
+# )
+# sl_time.js_on_change("value", cb_yt_time)
 
 sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
 sel_event.on_change("value", lambda a, o, n: upd_all())
+
 
 curdoc().add_root(
     column(
@@ -179,7 +212,7 @@ def add_boat_plot(b_cds, boat):
 
 
 def add_boats():
-    boats_raw = ac36data.get_boats("prada2021", 1)
+    boats_raw = ac36data.get_boats("prada2021", 17)
     # sl_time.start = 0
     # sl_time.end = max((len(boats_raw[0]["x"]), len(boats_raw[1]["x"]))) - 1
     sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
