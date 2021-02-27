@@ -110,7 +110,7 @@ cb_yt_time = CustomJS(
     
     console.log('yt seek')
     //videos.change.emit()
-    var dt = (cb_obj.value - window.race_start_time)/1000
+    var dt = (cb_obj.value - playerLeft.race_start_time)/1000
     playerLeft.seekTo(dt + playerLeft.offset)
     playerMid.seekTo(dt + playerMid.offset)
     playerRight.seekTo(dt + playerRight.offset)
@@ -125,7 +125,7 @@ cb_upd_yt = CustomJS(
     args=dict(videos=videos),
     code="""
     console.log('upd_yt');
-    window.race_start_time = videos.data.start[0]
+    playerLeft.race_start_time = videos.data.start[0]
     playerLeft.loadVideoById(videos.data.PRT[0]);
     playerLeft.offset = videos.data.PRT[1];
     playerLeft.stopVideo();
