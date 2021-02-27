@@ -110,11 +110,10 @@ cb_yt_time = CustomJS(
     
     console.log('yt seek')
     //videos.change.emit()
-    var t = cb_obj.value
-    var t0 = window.start_time
-    playerLeft.seekTo((t-t0)/1000 + playerLeft.offset)
-    playerMid.seekTo((t-t0)/1000 + playerMid.offset)
-    playerRight.seekTo((t-t0)/1000 + playerRight.offset)
+    var dt = (cb_obj.value - window.race_start_time)/1000
+    playerLeft.seekTo(dt + playerLeft.offset)
+    playerMid.seekTo(dt + playerMid.offset)
+    playerRight.seekTo(dt + playerRight.offset)
 """,
 )
 sl_time.js_on_change("value_throttled", cb_yt_time)
@@ -126,7 +125,7 @@ cb_upd_yt = CustomJS(
     args=dict(videos=videos),
     code="""
     console.log('upd_yt');
-    window.start_time = videos.data.start[0]
+    window.race_start_time = videos.data.start[0]
     playerLeft.loadVideoById(videos.data.PRT[0]);
     playerLeft.offset = videos.data.PRT[1];
     playerLeft.stopVideo();
