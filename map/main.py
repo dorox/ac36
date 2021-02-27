@@ -101,44 +101,10 @@ cb_bt_play = CustomJS(
 
 bt_play.js_on_click(cb_bt_play)
 
-cb_yt_time = CustomJS(
-    code="""
-    //console.log('yt seek')
-    var dt = (cb_obj.value - raceStartTime)/1000
-    playerLeft.seekTo(dt + videoOffsets.PRT)
-    playerMid.seekTo(dt + videoOffsets.TV)
-    playerRight.seekTo(dt + videoOffsets.STBD)
-""",
-)
-sl_time.js_on_change("value_throttled", cb_yt_time)
 
 sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
 sel_event.on_change("value", lambda a, o, n: upd_all())
 
-cb_upd_yt = CustomJS(
-    args=dict(videos=videos),
-    code="""
-    //console.log('upd_yt');
-    raceStartTime = videos.data.start[0]
-    playerLeft.loadVideoById(videos.data.PRT[0]);
-    videoOffsets.PRT = videos.data.PRT[1];
-    playerLeft.stopVideo();
-    playerMid.loadVideoById(videos.data.TV[0]);
-    videoOffsets.TV = videos.data.TV[1];
-    playerMid.stopVideo();
-    playerRight.loadVideoById(videos.data.STBD[0]);
-    videoOffsets.STBD = videos.data.STBD[1]
-    playerRight.stopVideo();
-    """,
-)
-sel_race.js_on_change(
-    "value",
-    CustomJS(
-        args=dict(videos=videos),
-        code="console.log('emit');videos.change.emit()",
-    ),
-)
-videos.js_on_change("data", cb_upd_yt)
 
 curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
 col = column(
@@ -148,7 +114,37 @@ col = column(
     name="col",
 )
 curdoc().add_root(col)
-curdoc().add_root(videos)
+
+
+def get_cb_yt_seek(stats):
+    offsets = {k: v["offset"] for k, v in stats["yt_videos"].items()}
+    t = datetime.fromtimestamp(stats["course_info"]["startTime"])
+    start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
+    start_time *= 1000
+    code = f"""
+        var dt = (cb_obj.value - {start_time})/1000
+        playerLeft.seekTo(dt + {offsets['PRT']})
+        playerMid.seekTo(dt + {offsets['TV']})
+        playerRight.seekTo(dt + {offsets['STBD']})
+        """
+    return CustomJS(code=code, name="cb_yt_seek")
+
+
+def get_cb_yt_upd(stats):
+    ids = {k: v["videoId"] for k, v in stats["yt_videos"].items()}
+    code = f"""
+        //console.log('upd_yt');
+        playerLeft.loadVideoById('{ids['PRT']}');
+        playerLeft.playVideo()
+        playerLeft.pauseVideo();
+        playerMid.loadVideoById('{ids['TV']}');
+        playerMid.playVideo()
+        playerMid.pauseVideo();
+        playerRight.loadVideoById('{ids['STBD']}');
+        playerRight.playVideo()
+        playerRight.pauseVideo();
+        """
+    return CustomJS(code=code, name="cb_yt_upd")
 
 
 def get_boat_cds(boat, cds_id=None):
@@ -322,32 +318,25 @@ def upd_stats(b_cds, boat):
     #     # legend.label["value"] = "hehe"
 
 
-def upd_yt(event, race):
-    stats = ac36data.get_stats(event, race)
-    yt_data = {k: [v["videoId"], v["offset"]] for k, v in stats["yt_videos"].items()}
-    t = datetime.fromtimestamp(stats["course_info"]["startTime"])
-    start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
-    yt_data["start"] = [start_time * 1000, 0]
-    videos.data = yt_data
-
-
 def upd_all(race=1):
     bt_play.active = False
     event = sel_event.value
     boats_raw = ac36data.get_boats(sel_event.value, race)
-    upd_yt(event, race)
+    stats = ac36data.get_stats(sel_event.value, race)
     for b, d in zip(boats_raw, boats):
         cds = get_boat_cds(b, d["cds"])
         upd_tracks(cds, d)
         upd_stats(cds, d)
-    # sl_time.end = len(cds.data["x"]) - 1
+    sl_time.js_property_callbacks["change:start"] = []
+    sl_time.js_on_change("start", get_cb_yt_upd(stats))
     sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
     sl_time.end = min((boats_raw[0]["x"][-1], boats_raw[1]["x"][-1]))
     sl_time.step = boats_raw[0]["x"][2] - boats_raw[0]["x"][1]
     sl_time.value = sl_time.start
     sel_race.options = ac36data.get_races(event)
+    sl_time.js_property_callbacks["change:value_throttled"] = []
+    sl_time.js_on_change("value_throttled", get_cb_yt_seek(stats))
 
 
 add_boats()
-upd_yt(sel_event.value, sel_race.value)
-upd_yt(sel_event.value, sel_race.value)
+upd_all(race=sel_race.value)
