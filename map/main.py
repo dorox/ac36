@@ -1,3 +1,4 @@
+from datetime import datetime
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
 from bokeh.models import (
@@ -5,9 +6,7 @@ from bokeh.models import (
     Slider,
     Span,
     Select,
-    LegendItem,
     Toggle,
-    DatetimeTickFormatter,
 )
 from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure
@@ -31,7 +30,9 @@ opt_stats = {
     "twa_abs": "twa_abs",
     "vmg/tws": "tws/vmg",
 }
-
+# --- Persistent data ----
+boats = (dict(), dict())
+videos = ColumnDataSource()
 
 # position is supplied in web mercator coordinates
 map = figure(
@@ -61,7 +62,7 @@ sel_stats = Select(
     name="stats",
 )
 sel_race = Select(
-    value="1", title="Race", width=50, options=ac36data.get_races("prada2021")
+    value="17", title="Race", width=50, options=ac36data.get_races("prada2021")
 )
 sel_event = Select(
     value="prada2021", title="Event", width=100, options=["acws2020", "prada2021"]
@@ -74,47 +75,87 @@ sl_time = Slider(
     title="Time, ms",
     sizing_mode="stretch_width",
     name="time",
-    format="%F",
 )
-# bt_play = Toggle(label="play")
-# cb_bt_play = CustomJS(
-#     args=dict(sl_time=sl_time),
-#     code="""
-#     console.log('play')
-#     console.log(cb_obj.active)
-#     do {
-#         setTimeout(function() {console.log('playing')}, 500)
-#     } while (cb_obj.active)
-#     """,
-# )
-# bt_play.js_on_click(cb_bt_play)
+bt_play = Toggle(label="play", width=100, active=False)
+cb_bt_play = CustomJS(
+    args=dict(sl_time=sl_time),
+    code="""
+    //console.log('play')
+    if (cb_obj.active) {
+        cb_obj.label='pause'
+        cb_obj.tags[0] = setInterval(function(){
+            sl_time.value = sl_time.value+100
+            }, 100)
+        playerLeft.playVideo()
+        playerMid.playVideo()
+        playerRight.playVideo()
+    } else {
+        cb_obj.label='play'
+        clearInterval(cb_obj.tags[0])
+        playerLeft.pauseVideo()
+        playerMid.pauseVideo()
+        playerRight.pauseVideo()
+    }
+    """,
+)
 
-# cb_yt_time = CustomJS(
-#     code="""
-#     // YT start time = 8:30, 491s
-#     // data start time = 58739760
-#     console.log('yt seek')
-#     var t = cb_obj.value
-#     var yt_start = 510
-#     player.seekTo((t-58739760+491000)/1000)
-# """
-# )
-# sl_time.js_on_change("value", cb_yt_time)
+bt_play.js_on_click(cb_bt_play)
+
+cb_yt_time = CustomJS(
+    code="""
+    // mid start time = 8:30, 491s
+    // stbd = 18:33, 1113
+    // port = 18:38, 1118
+    // data start time = 58739760
+    
+    console.log('yt seek')
+    //videos.change.emit()
+    var t = cb_obj.value
+    var t0 = window.start_time
+    playerLeft.seekTo((t-t0)/1000 + playerLeft.offset)
+    playerMid.seekTo((t-t0)/1000 + playerMid.offset)
+    playerRight.seekTo((t-t0)/1000 + playerRight.offset)
+""",
+)
+sl_time.js_on_change("value_throttled", cb_yt_time)
 
 sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
 sel_event.on_change("value", lambda a, o, n: upd_all())
 
-
-curdoc().add_root(
-    column(
-        map,
-        plot,
-        row(sl_time, sel_stats, sel_event, sel_race),
-        sizing_mode="stretch_width",
-    )
+cb_upd_yt = CustomJS(
+    args=dict(videos=videos),
+    code="""
+    console.log('upd_yt');
+    window.start_time = videos.data.start[0]
+    playerLeft.loadVideoById(videos.data.PRT[0]);
+    playerLeft.offset = videos.data.PRT[1];
+    playerLeft.stopVideo();
+    playerMid.loadVideoById(videos.data.TV[0]);
+    playerMid.offset = videos.data.TV[1];
+    playerMid.stopVideo();
+    playerRight.loadVideoById(videos.data.STBD[0]);
+    playerRight.offset = videos.data.STBD[1]
+    playerRight.stopVideo();
+    """,
 )
+sel_race.js_on_change(
+    "value",
+    CustomJS(
+        args=dict(videos=videos),
+        code="console.log('emit');videos.change.emit()",
+    ),
+)
+videos.js_on_change("data", cb_upd_yt)
 
-boats = (dict(), dict())
+curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
+col = column(
+    sl_time,
+    row(bt_play, sel_stats, sel_event, sel_race),
+    sizing_mode="stretch_both",
+    name="col",
+)
+curdoc().add_root(col)
+curdoc().add_root(videos)
 
 
 def get_boat_cds(boat, cds_id=None):
@@ -212,7 +253,7 @@ def add_boat_plot(b_cds, boat):
 
 
 def add_boats():
-    boats_raw = ac36data.get_boats("prada2021", 17)
+    boats_raw = ac36data.get_boats(sel_event.value, sel_race.value)
     # sl_time.start = 0
     # sl_time.end = max((len(boats_raw[0]["x"]), len(boats_raw[1]["x"]))) - 1
     sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
@@ -225,9 +266,10 @@ def add_boats():
         add_boat_plot(cds, d)
         add_boat_track(cds, d)
 
-    # --Vertical line to indicate time: ---
+    # --Vertical time indicator: ---
     sp_time = Span(location=0, dimension="height", line_color="grey", line_width=1)
     plot.add_layout(sp_time)
+
     cb_sp_time = CustomJS(
         args=dict(sp=sp_time, b=cds),
         code="""
@@ -283,14 +325,24 @@ def upd_stats(b_cds, boat):
     line = curdoc().get_model_by_id(boat["line_stat"])
     stat.data = {"time": b_cds.data["x"], "y": b_cds.data[sel_stats.value]}
     line.glyph.line_color = b_cds.tags[0]
-
     # # legends = plot.legend.items
     #     # legend.label["value"] = "hehe"
 
 
+def upd_yt(event, race):
+    stats = ac36data.get_stats(event, race)
+    yt_data = {k: [v["videoId"], v["offset"]] for k, v in stats["yt_videos"].items()}
+    t = datetime.fromtimestamp(stats["course_info"]["startTime"])
+    start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
+    yt_data["start"] = [start_time * 1000, 0]
+    videos.data = yt_data
+
+
 def upd_all(race=1):
+    bt_play.active = False
     event = sel_event.value
     boats_raw = ac36data.get_boats(sel_event.value, race)
+    upd_yt(event, race)
     for b, d in zip(boats_raw, boats):
         cds = get_boat_cds(b, d["cds"])
         upd_tracks(cds, d)
@@ -303,3 +355,4 @@ def upd_all(race=1):
 
 
 add_boats()
+upd_yt(sel_event.value, sel_race.value)
