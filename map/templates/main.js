@@ -8,6 +8,8 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 var playerLeft;
 var playerMid;
 var playerRight;
+var raceStartTime = 58740000;
+var videoOffsets = { 'STBD': 1113, 'PRT': 1118, 'TV': 1108 };
 
 function onYouTubeIframeAPIReady() {
     playerLeft = new YT.Player('playerLeft', {

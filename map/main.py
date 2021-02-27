@@ -103,17 +103,11 @@ bt_play.js_on_click(cb_bt_play)
 
 cb_yt_time = CustomJS(
     code="""
-    // mid start time = 8:30, 491s
-    // stbd = 18:33, 1113
-    // port = 18:38, 1118
-    // data start time = 58739760
-    
-    console.log('yt seek')
-    //videos.change.emit()
-    var dt = (cb_obj.value - playerLeft.race_start_time)/1000
-    playerLeft.seekTo(dt + playerLeft.offset)
-    playerMid.seekTo(dt + playerMid.offset)
-    playerRight.seekTo(dt + playerRight.offset)
+    //console.log('yt seek')
+    var dt = (cb_obj.value - raceStartTime)/1000
+    playerLeft.seekTo(dt + videoOffsets.PRT)
+    playerMid.seekTo(dt + videoOffsets.TV)
+    playerRight.seekTo(dt + videoOffsets.STBD)
 """,
 )
 sl_time.js_on_change("value_throttled", cb_yt_time)
@@ -124,16 +118,16 @@ sel_event.on_change("value", lambda a, o, n: upd_all())
 cb_upd_yt = CustomJS(
     args=dict(videos=videos),
     code="""
-    console.log('upd_yt');
-    playerLeft.race_start_time = videos.data.start[0]
+    //console.log('upd_yt');
+    raceStartTime = videos.data.start[0]
     playerLeft.loadVideoById(videos.data.PRT[0]);
-    playerLeft.offset = videos.data.PRT[1];
+    videoOffsets.PRT = videos.data.PRT[1];
     playerLeft.stopVideo();
     playerMid.loadVideoById(videos.data.TV[0]);
-    playerMid.offset = videos.data.TV[1];
+    videoOffsets.TV = videos.data.TV[1];
     playerMid.stopVideo();
     playerRight.loadVideoById(videos.data.STBD[0]);
-    playerRight.offset = videos.data.STBD[1]
+    videoOffsets.STBD = videos.data.STBD[1]
     playerRight.stopVideo();
     """,
 )
@@ -350,8 +344,10 @@ def upd_all(race=1):
     sl_time.start = max((boats_raw[0]["x"][0], boats_raw[1]["x"][0]))
     sl_time.end = min((boats_raw[0]["x"][-1], boats_raw[1]["x"][-1]))
     sl_time.step = boats_raw[0]["x"][2] - boats_raw[0]["x"][1]
+    sl_time.value = sl_time.start
     sel_race.options = ac36data.get_races(event)
 
 
 add_boats()
+upd_yt(sel_event.value, sel_race.value)
 upd_yt(sel_event.value, sel_race.value)
