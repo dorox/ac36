@@ -102,10 +102,6 @@ cb_bt_play = CustomJS(
 bt_play.js_on_click(cb_bt_play)
 
 
-sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
-sel_event.on_change("value", lambda a, o, n: upd_all())
-
-
 curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
 col = column(
     sl_time,
@@ -118,9 +114,6 @@ curdoc().add_root(col)
 
 def get_cb_yt_seek(stats):
     offsets = {k: v["offset"] for k, v in stats["yt_videos"].items()}
-    # t = datetime.fromtimestamp(stats["course_info"]["startTime"])
-    # start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
-    # start_time *= 1000
     start_time = stats["course_info"]["startTime"] - 3 * 3600
     code = f"""
         console.log('yt_seek, {start_time}')
@@ -290,6 +283,9 @@ def add_boats():
     )
 
     sl_time.js_on_change("value", cb_range)
+    stats = ac36data.get_stats(sel_event.value, sel_race.value)
+    sl_time.js_on_change("start", get_cb_yt_upd(stats))
+    sl_time.js_on_change("value_throttled", get_cb_yt_seek(stats))
 
 
 def upd_tracks(b_cds, boat):
@@ -341,4 +337,6 @@ def upd_all(race=1):
 
 
 add_boats()
-upd_all(race=sel_race.value)
+sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
+sel_event.on_change("value", lambda a, o, n: upd_all())
+# upd_all(race=sel_race.value)
