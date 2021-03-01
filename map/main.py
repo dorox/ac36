@@ -118,12 +118,13 @@ curdoc().add_root(col)
 
 def get_cb_yt_seek(stats):
     offsets = {k: v["offset"] for k, v in stats["yt_videos"].items()}
-    t = datetime.fromtimestamp(stats["course_info"]["startTime"])
-    start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
-    start_time *= 1000
+    # t = datetime.fromtimestamp(stats["course_info"]["startTime"])
+    # start_time = (t.hour - 3) * 3600 + t.minute * 60 + t.second
+    # start_time *= 1000
+    start_time = stats["course_info"]["startTime"] - 3 * 3600
     code = f"""
         console.log('yt_seek, {start_time}')
-        var dt = (cb_obj.value - {start_time})/1000
+        var dt = cb_obj.value/1000 - {start_time}
         playerLeft.seekTo(dt + {offsets['PRT']})
         playerMid.seekTo(dt + {offsets['TV']})
         playerRight.seekTo(dt + {offsets['STBD']})
