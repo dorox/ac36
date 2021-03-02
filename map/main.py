@@ -116,7 +116,7 @@ def get_cb_yt_seek(stats):
     offsets = {k: v["offset"] for k, v in stats["yt_videos"].items()}
     start_time = stats["course_info"]["startTime"] - 3 * 3600
     code = f"""
-        console.log('yt_seek, {start_time}')
+        //console.log('yt_seek, {start_time}')
         var dt = cb_obj.value/1000 - {start_time}
         playerLeft.seekTo(dt + {offsets['PRT']})
         playerMid.seekTo(dt + {offsets['TV']})
@@ -128,14 +128,14 @@ def get_cb_yt_seek(stats):
 def get_cb_yt_upd(stats):
     ids = {k: v["videoId"] for k, v in stats["yt_videos"].items()}
     code = f"""
-        console.log('upd_yt');
-        playerLeft.loadVideoById('{ids['PRT']}');
+        //console.log('upd_yt');
+        playerLeft.loadVideoById('{ids['PRT']}', 0);
         playerLeft.playVideo()
         playerLeft.pauseVideo();
-        playerMid.loadVideoById('{ids['TV']}');
+        playerMid.loadVideoById('{ids['TV']}', 0);
         playerMid.playVideo()
         playerMid.pauseVideo();
-        playerRight.loadVideoById('{ids['STBD']}');
+        playerRight.loadVideoById('{ids['STBD']}', 0);
         playerRight.playVideo()
         playerRight.pauseVideo();
         """

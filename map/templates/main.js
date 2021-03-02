@@ -18,7 +18,7 @@ function onYouTubeIframeAPIReady() {
     playerMid = new YT.Player('playerMid', {
         height: '100%',
         width: '100%',
-        videoId: 'yt8FA245Azs',
+        videoId: '63Jv7jSxmms',
     });
     playerRight = new YT.Player('playerRight', {
         height: '100%',
