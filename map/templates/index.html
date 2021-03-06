@@ -2,9 +2,6 @@
 
 {% block preamble %}
 {{super()}}
-<script>
-    {% include 'main.js' %};
-</script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
 <style>
     :root {
@@ -15,6 +12,9 @@
 {% endblock %}
 
 {% block contents %}
+<script>
+    {% include 'main.js' %};
+</script>
 <style>
     .container {
         display: flex;

@@ -10,6 +10,7 @@ var playerMid;
 var playerRight;
 
 function onYouTubeIframeAPIReady() {
+    console.log('YTapiready')
     playerLeft = new YT.Player('playerLeft', {
         height: '100%',
         width: '100%',
