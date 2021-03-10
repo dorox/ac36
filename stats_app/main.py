@@ -76,7 +76,6 @@ def get_plot():
                 ("time", "@time{%H:%M:%S}"),
             ],
             formatters={"@time": "datetime"},
-            mode="vline",
         )
     )
     plot.xaxis.axis_label = "Time"

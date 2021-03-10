@@ -1,13 +1,7 @@
 from datetime import datetime
 from bokeh.io import curdoc
 from bokeh.layouts import column, row
-from bokeh.models import (
-    ColumnDataSource,
-    Slider,
-    Span,
-    Select,
-    Toggle,
-)
+from bokeh.models import ColumnDataSource, Slider, Span, Select, Toggle, HoverTool
 from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
@@ -48,11 +42,20 @@ map.add_tile(get_provider(CARTODBPOSITRON))
 
 plot = figure(
     x_axis_type="datetime",
-    tools="pan, xwheel_zoom, reset",
-    sizing_mode="stretch_width",
+    tools="pan, xwheel_zoom, reset, box_zoom",
+    sizing_mode="stretch_both",
     active_scroll="xwheel_zoom",
-    height=200,
-    name="figure",
+    # height="30%",
+    name="plot",
+)
+plot.add_tools(
+    HoverTool(
+        tooltips=[
+            ("value", "@y"),
+            ("time", "@time{%H:%M:%S}"),
+        ],
+        formatters={"@time": "datetime"},
+    )
 )
 sel_stats = Select(
     value="speed",
@@ -62,10 +65,13 @@ sel_stats = Select(
     name="stats",
 )
 sel_race = Select(
-    value="17", title="Race", width=50, options=ac36data.get_races("prada2021")
+    value="1", title="Race", width=50, options=ac36data.get_races("ac2021")
 )
 sel_event = Select(
-    value="prada2021", title="Event", width=100, options=["acws2020", "prada2021"]
+    value="ac2021",
+    title="Event",
+    width=100,
+    options=["acws2020", "prada2021", "ac2021"],
 )
 sl_time = Slider(
     start=0,
@@ -106,7 +112,7 @@ curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
 col = column(
     sl_time,
     row(bt_play, sel_stats, sel_event, sel_race),
-    sizing_mode="stretch_both",
+    sizing_mode="stretch_width",
     name="col",
 )
 curdoc().add_root(col)
@@ -149,7 +155,10 @@ def get_boat_cds(boat, cds_id=None):
         cds = curdoc().get_model_by_id(cds_id)
     cds.data = {k: v for k, v in boat.items() if type(v) != str and k != "legs"}
     cds.name = boat["name"]
-    cds.tags = [boat["color"]]
+    if boat["name"] == "ITA":
+        cds.tags = ["#a6b500"]
+    else:
+        cds.tags = [boat["color"]]
     return cds
 
 
@@ -339,4 +348,3 @@ def upd_all(race=1):
 add_boats()
 sel_race.on_change("value", lambda a, o, n: upd_all(race=n))
 sel_event.on_change("value", lambda a, o, n: upd_all())
-# upd_all(race=sel_race.value)

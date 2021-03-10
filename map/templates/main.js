@@ -12,18 +12,12 @@ var playerRight;
 function onYouTubeIframeAPIReady() {
     console.log('YTapiready')
     playerLeft = new YT.Player('playerLeft', {
-        height: '100%',
-        width: '100%',
-        videoId: '784D5bY0rW0',
+        videoId: 'WRraRPnBbXY',
     });
     playerMid = new YT.Player('playerMid', {
-        height: '100%',
-        width: '100%',
-        videoId: '63Jv7jSxmms',
+        videoId: 'Tyn-Vyuzrbc',
     });
     playerRight = new YT.Player('playerRight', {
-        height: '100%',
-        width: '100%',
-        videoId: 'yAGyAgAOVR4',
+        videoId: 'aJ_ewscxhRc',
     });
 }
