@@ -12,14 +12,6 @@
 {% endblock %}
 
 {% block contents %}
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-R3G1B1DMZ0"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-R3G1B1DMZ0');
-</script>
-
 <script>
     {% include 'main.js' %};
 </script>
@@ -73,4 +65,13 @@
 </div>
 {{embed(roots.col)}}
 {{super()}}
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R3G1B1DMZ0"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-R3G1B1DMZ0');
+</script>
+
 {% endblock %}

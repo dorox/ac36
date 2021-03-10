@@ -3,6 +3,7 @@
 {% block preamble %}
 {{super()}}
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+
 <style>
     :root {
         touch-action: pan-x pan-y;
@@ -13,4 +14,14 @@
 
 {% block contents %}
 {{ super() }}
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R3G1B1DMZ0"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-R3G1B1DMZ0');
+</script>
+
 {% endblock %}
