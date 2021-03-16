@@ -16,6 +16,10 @@
     {% include 'main.js' %};
 </script>
 <style>
+    .app {
+        max-height: 100vh;
+    }
+
     .container {
         display: flex;
     }
@@ -33,6 +37,7 @@
         overflow: hidden;
         position: relative;
         width: 100%;
+        max-height: 28.3vh;
     }
 
     .video::after {
@@ -49,23 +54,24 @@
         height: 100%;
     }
 </style>
-<div class='container'>
-    <div class='videos'>
-        <div class="video">
-            <div id="playerLeft"></div>
+<div class='app'>
+    <div class='container'>
+        <div class='videos'>
+            <div class="video">
+                <div id="playerLeft"></div>
+            </div>
+            <div class="video">
+                <div id="playerMid"></div>
+            </div>
+            <div class="video">
+                <div id="playerRight"></div>
+            </div>
         </div>
-        <div class="video">
-            <div id="playerMid"></div>
-        </div>
-        <div class="video">
-            <div id="playerRight"></div>
-        </div>
+        <div class='embed_map'>{{embed(roots.figures)}}</div>
     </div>
-    <div class='embed_map'>{{embed(roots.figures)}}</div>
+    {{embed(roots.col)}}
+    {{super()}}
 </div>
-{{embed(roots.col)}}
-{{super()}}
-
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3G1B1DMZ0"></script>
 <script>
     window.dataLayer = window.dataLayer || [];

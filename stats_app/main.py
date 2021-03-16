@@ -23,8 +23,9 @@ stats = {
     "twd": "twdInterp",
     "port foil": "leftFoilPosition",
     "stbd foil": "rightFoilPosition",
-    "both foils": "both foils",
+    # "both foils": "both foils",
     "vmg": "vmg",
+    "cvmg": "cvmg",
     "twa": "twa",
     "twa_abs": "twa_abs",
     "vmg/tws": "tws/vmg",
@@ -60,6 +61,7 @@ def get_plot():
     e = event_select.value
     r = races_select.value
     s = stats_select.value
+    s = stats[s]
     b1, b2 = ac36data.get_boats(e, r)
 
     plot = figure(
