@@ -320,8 +320,8 @@ def upd_tracks(b_cds, boat):
 def upd_stats(b_cds, boat):
     stat = curdoc().get_model_by_id(boat["stat"])
     line = curdoc().get_model_by_id(boat["line_stat"])
-    stat_id = opt_stats[sel_stats.value]
-    stat.data = {"time": b_cds.data["x"], "y": b_cds.data[stat_id]}
+    # stat_id = opt_stats[sel_stats.value]
+    stat.data = {"time": b_cds.data["x"], "y": b_cds.data[sel_stats.value]}
     line.glyph.line_color = b_cds.tags[0]
     # # legends = plot.legend.items
     #     # legend.label["value"] = "hehe"
