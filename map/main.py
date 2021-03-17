@@ -109,14 +109,17 @@ cb_bt_play = CustomJS(
 bt_play.js_on_click(cb_bt_play)
 
 
-curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
+# curdoc().add_root(column(map, plot, sizing_mode="stretch_both", name="figures"))
 col = column(
     sl_time,
     row(bt_play, sel_stats, sel_event, sel_race),
     sizing_mode="stretch_width",
     name="col",
 )
-curdoc().add_root(col)
+
+# curdoc().add_root(col)
+curdoc().add_root(column(map, plot, col, sizing_mode="stretch_both", name="all"))
+curdoc().title = "AC36 telemetry"
 
 
 def get_cb_yt_seek(stats):

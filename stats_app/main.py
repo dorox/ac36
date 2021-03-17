@@ -42,6 +42,7 @@ units = {
     "stbd foil": "deg",
     "both foils": "deg",
     "vmg": "kn",
+    "cvmg": "kn",
     "twa": "deg(-180:180)",
     "twa_abs": "deg(0:180)",
     "vmg/tws": "vmg/tws",
@@ -61,7 +62,6 @@ def get_plot():
     e = event_select.value
     r = races_select.value
     s = stats_select.value
-    s = stats[s]
     b1, b2 = ac36data.get_boats(e, r)
 
     plot = figure(

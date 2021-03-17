@@ -18,6 +18,7 @@
 <style>
     .app {
         max-height: 100vh;
+
     }
 
     .container {
@@ -27,17 +28,19 @@
     .videos {
         width: 40%;
         max-width: 500px;
+        max-height: 100vh;
     }
 
     .embed_map {
         flex-grow: 1;
+        max-height: 99vh;
     }
 
     .video {
         overflow: hidden;
         position: relative;
         width: 100%;
-        max-height: 100/3vh;
+        max-height: calc(99vh / 3);
     }
 
     .video::after {
@@ -67,10 +70,12 @@
                 <div id="playerRight"></div>
             </div>
         </div>
-        <div class='embed_map'>{{embed(roots.figures)}}</div>
+        <div class='embed_map'>
+            {{embed(roots.all)}}
+            {{super()}}
+        </div>
     </div>
-    {{embed(roots.col)}}
-    {{super()}}
+
 </div>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R3G1B1DMZ0"></script>
 <script>
